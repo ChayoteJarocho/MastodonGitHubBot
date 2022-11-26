@@ -12,7 +12,7 @@ internal static class GitHub
         ArgumentException.ThrowIfNullOrEmpty(settings.GitHubSecret);
         ArgumentException.ThrowIfNullOrEmpty(settings.GitHubUserName);
 
-        var github = new GitHubClient(new ProductHeaderValue(settings.AppName));
+        GitHubClient github = new(new ProductHeaderValue(settings.AppName));
         string accessToken = await GetAccessTokenAsync(settings, github);
         github.Credentials = new Credentials(accessToken);
 
