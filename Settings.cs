@@ -15,8 +15,11 @@ internal sealed class Settings
     public string GitHubUserName { get; set; } = string.Empty;
     public string GitHubRepoOrg { get; set; } = string.Empty;
     public string GitHubRepoName { get; set; } = string.Empty;
+    public int GitHubLatestIssueNumber { get; set; } = 0;
     public string MastodonServer { get; set; } = string.Empty;
     public string MastodonAccessToken { get; set; } = string.Empty;
+    public int SleepSeconds { get; set; } = 120;
+    public bool Debug { get; set; } = true;
 
     public void Flush()
     {
@@ -71,6 +74,14 @@ internal sealed class Settings
         {
             settings.GitHubAccessToken = AskOptionalString("Mastodon access token");
         }
+        if (settings.SleepSeconds <= 0)
+        {
+            throw new ArgumentOutOfRangeException("The SleepSeconds value should be a positive number.");
+        }
+
+        Console.WriteLine(settings.Debug ?
+            "Debugging mode enabled. Won't publish to Mastodon." :
+            "Debugging mode disabled. Will publish to Mastodon.");
 
         return settings;
     }
