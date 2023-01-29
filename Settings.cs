@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MastodonGitHubBot;
 
 internal sealed class Settings
 {
-    private static readonly string SettingsFilePath = "appsettings.json";
+    private static readonly string SettingsFilePath = Path.GetFullPath(Path.Join(AppContext.BaseDirectory, "appsettings.json"));
 
     public string AppName { get; set; } = string.Empty;
     public string GitHubClientId { get; set; } = string.Empty;
@@ -18,6 +19,7 @@ internal sealed class Settings
     public int GitHubLatestIssueNumber { get; set; } = 0;
     public string MastodonServer { get; set; } = string.Empty;
     public string MastodonAccessToken { get; set; } = string.Empty;
+    public Mastonet.Visibility Visibility { get; set; } = Mastonet.Visibility.Unlisted;
     public int SleepSeconds { get; set; } = 120;
     public bool Debug { get; set; } = true;
 
@@ -34,9 +36,12 @@ internal sealed class Settings
         {
             throw new FileNotFoundException(SettingsFilePath);
         }
+        Console.WriteLine($"Reading settings file: {SettingsFilePath}");
 
         string json = File.ReadAllText(SettingsFilePath);
-        Settings settings = JsonSerializer.Deserialize<Settings>(json) ?? throw new JsonException($"Malformed {SettingsFilePath}.");
+        JsonSerializerOptions options = new();
+        options.Converters.Add(new JsonStringEnumConverter());
+        Settings settings = JsonSerializer.Deserialize<Settings>(json, options) ?? throw new JsonException($"Malformed {SettingsFilePath}.");
 
         if (string.IsNullOrWhiteSpace(settings.AppName))
         {
@@ -73,6 +78,10 @@ internal sealed class Settings
         if (string.IsNullOrWhiteSpace(settings.MastodonAccessToken))
         {
             settings.GitHubAccessToken = AskOptionalString("Mastodon access token");
+        }
+        if ((Mastonet.Visibility)settings.Visibility is < Mastonet.Visibility.Public or > Mastonet.Visibility.Direct)
+        {
+            throw new ArgumentOutOfRangeException($"Visibility value is out of range: {settings.Visibility}. Allowed numeric values are: 0 (Public), 1 (Unlisted), 2 (Private), 3 (Direct).");
         }
         if (settings.SleepSeconds <= 0)
         {

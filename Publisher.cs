@@ -101,7 +101,7 @@ internal class Publisher
         Console.WriteLine($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
         if (!_settings.Debug)
         {
-            Status status = await _mastodon.PublishStatus(text, Visibility.Unlisted);
+            Status status = await _mastodon.PublishStatus(text, _settings.Visibility);
             Console.WriteLine($"    Status published to Mastodon. ID: {status.Url}");
             Thread.Sleep(1000);
         }
