@@ -90,7 +90,7 @@ internal class Publisher
         Issue? lastPublishedIssue = GetLastPublishedIssue(latestIssues);
 
         return latestIssues
-            .Where(i => i.CreatedAt > lastPublishedIssue.CreatedAt && i.Number > lastPublishedIssue.Number)
+            .Where(i => i.Number > lastPublishedIssue.Number)
             .OrderBy(i => i.Number); // Re-sorted ascending so they get published in order of creation
     }
 
