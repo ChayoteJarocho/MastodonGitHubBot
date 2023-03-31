@@ -71,8 +71,6 @@ internal class Publisher
         {
             for (int number = _settings.GitHubLatestIssueNumber; number < (_settings.GitHubLatestIssueNumber + 10); number++)
             {
-
-                // Can be null if it's too old and latestIssues does not contain it
                 lastPublishedIssue = latestIssues.SingleOrDefault(i => i.Number == number);
                 if (lastPublishedIssue != null)
                 {
@@ -80,6 +78,7 @@ internal class Publisher
                     break;
                 }
 
+                // Can be null if it's too old and latestIssues does not contain it
                 Console.WriteLine($"Unable to find the specified latest issue: {number}. Trying with {number + 1} now...");
             }
         }
