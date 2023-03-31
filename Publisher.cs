@@ -1,11 +1,11 @@
-﻿using Mastonet;
-using Mastonet.Entities;
-using Octokit;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Mastonet;
+using Mastonet.Entities;
+using Octokit;
 
 namespace MastodonGitHubBot;
 
@@ -26,7 +26,7 @@ internal class Publisher
         _mastodon = mastodon;
         _github = github;
 
-        _firstPageApiOptions = new() { PageCount = 1, PageSize = 25, StartPage = 1 };
+        _firstPageApiOptions = new() { PageCount = 1, PageSize = 250, StartPage = 1 };
         _latestIssuesConfiguration = new() { SortDirection = SortDirection.Descending, State = ItemStateFilter.Open, SortProperty = IssueSort.Created };
 
         _sleepSecondsSpan = TimeSpan.FromSeconds(_settings.SleepSeconds);
@@ -44,6 +44,7 @@ internal class Publisher
         Console.WriteLine($"How many requests per hour?: {howManyRequestsCanIMakePerHour}");
         Console.WriteLine($"How many requests left?: {howManyRequestsDoIHaveLeft}");
         Console.WriteLine($"When does the limit reset?: {whenDoesTheLimitReset}");
+        Console.WriteLine("----------");
 
         Console.WriteLine($"Starting loop...");
         while (true)
@@ -68,13 +69,25 @@ internal class Publisher
         Issue? lastPublishedIssue = null;
         if (_settings.GitHubLatestIssueNumber != 0)
         {
-            // Can be null if it's too old and latestIssues does not contain it
-            lastPublishedIssue = latestIssues.SingleOrDefault(i => i.Number == _settings.GitHubLatestIssueNumber);
+            for (int number = _settings.GitHubLatestIssueNumber; number < (_settings.GitHubLatestIssueNumber + 10); number++)
+            {
+                lastPublishedIssue = latestIssues.SingleOrDefault(i => i.Number == number);
+                if (lastPublishedIssue != null)
+                {
+                    Console.WriteLine($"Found the specified latest issue: {number}");
+                    break;
+                }
+
+                // Can be null if it's too old and latestIssues does not contain it
+                Console.WriteLine($"Unable to find the specified latest issue: {number}. Trying with {number + 1} now...");
+            }
         }
 
         if (lastPublishedIssue == null)
         {
-            lastPublishedIssue = latestIssues.Any() ? latestIssues.First() : throw new NullReferenceException("No issues found."); ;
+            Console.WriteLine($"Unable to find the the specified latest issue or the next 10 after that: {_settings.GitHubLatestIssueNumber}");
+            lastPublishedIssue = latestIssues.Any() ? latestIssues.First() : throw new NullReferenceException("No issues found.");
+            Console.WriteLine($"Assigning the latest found issue as the latest one: {lastPublishedIssue.Number}");
             _settings.GitHubLatestIssueNumber = lastPublishedIssue.Number;
             _settings.Flush();
         }
