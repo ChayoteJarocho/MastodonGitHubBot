@@ -10,6 +10,7 @@ Prerequisites:
 - Click on "Generate a new client secret", then copy the generated secret, you'll need it later.
 - Clone, build and run this project.
 - Follow the instructions to generate the access tokens for GitHub and Mastodon. They will get stored automatically under `bin\<Configuration>\net7.0\appsettings.json`.
+- On Windows, run the tool as administrator to ensure event logging works.
 
 Note: The `Debug` value in `appsettings.json` is set to `true` by default, meaning it will initially only print to console and won't publish toots to Mastodon. You need to set it to `false` to start tooting.
 
