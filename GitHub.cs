@@ -6,20 +6,19 @@ namespace MastodonGitHubBot;
 
 internal static class GitHub
 {
-    public static async Task<GitHubClient> GetClientAsync(Settings settings)
+    public static async Task<GitHubClient> GetClientAsync(Log log, Settings settings)
     {
         ArgumentException.ThrowIfNullOrEmpty(settings.GitHubClientId);
         ArgumentException.ThrowIfNullOrEmpty(settings.GitHubSecret);
         ArgumentException.ThrowIfNullOrEmpty(settings.GitHubUserName);
 
         GitHubClient github = new(new ProductHeaderValue(settings.AppName));
-        string accessToken = await GetAccessTokenAsync(settings, github);
+        string accessToken = await GetAccessTokenAsync(log, settings, github);
         github.Credentials = new Credentials(accessToken);
-
         return github;
     }
 
-    private static async Task<string> GetAccessTokenAsync(Settings settings, GitHubClient github)
+    private static async Task<string> GetAccessTokenAsync(Log log, Settings settings, GitHubClient github)
     {
         if (string.IsNullOrWhiteSpace(settings.GitHubAccessToken))
         {
@@ -27,7 +26,7 @@ internal static class GitHub
             oauthLoginRequest.Scopes.Add(settings.GitHubUserName);
             oauthLoginRequest.Scopes.Add("public_repo");
 
-            string authCode = GetGitHubOAuthCode(github, oauthLoginRequest);
+            string authCode = GetGitHubOAuthCode(log, github, oauthLoginRequest);
 
             OauthTokenRequest oauthTokenRequest = new(settings.GitHubClientId, settings.GitHubSecret, authCode);
             OauthToken accessToken = await github.Oauth.CreateAccessToken(oauthTokenRequest);
@@ -38,10 +37,10 @@ internal static class GitHub
         return settings.GitHubAccessToken;
     }
 
-    private static string GetGitHubOAuthCode(GitHubClient github, OauthLoginRequest oauthLoginRequest)
+    private static string GetGitHubOAuthCode(Log log, GitHubClient github, OauthLoginRequest oauthLoginRequest)
     {
         Uri url = github.Oauth.GetGitHubLoginUrl(oauthLoginRequest);
-        Console.WriteLine($"Go to the authorization page: {url}");
+        log.WriteWarning($"Go to the authorization page '{url}' then paste the authentication code in the console.");
         Console.Write("Paste the authentication code: ");
         string authCode = Console.ReadLine() ?? throw new NullReferenceException(nameof(authCode));
         ArgumentException.ThrowIfNullOrEmpty(authCode);
