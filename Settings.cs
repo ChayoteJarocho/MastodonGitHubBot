@@ -30,19 +30,22 @@ internal sealed class Settings
         File.WriteAllText(SettingsFilePath, json);
     }
 
-    public static Settings Load()
+    public static Settings Load(Log log)
     {
+        ArgumentNullException.ThrowIfNull(log);
+
         if (!File.Exists(SettingsFilePath))
         {
             throw new FileNotFoundException(SettingsFilePath);
         }
-        Console.WriteLine($"Reading settings file: {SettingsFilePath}");
+        log.WriteInfo($"Reading settings file: {SettingsFilePath}");
 
         string json = File.ReadAllText(SettingsFilePath);
         JsonSerializerOptions options = new();
         options.Converters.Add(new JsonStringEnumConverter());
         Settings settings = JsonSerializer.Deserialize<Settings>(json, options) ?? throw new JsonException($"Malformed {SettingsFilePath}.");
 
+        log.WriteInfo("Verifying that all settings values are filled out or prompting user if a value is missing...");
         if (string.IsNullOrWhiteSpace(settings.AppName))
         {
             settings.AppName = AskString("name of the GitHub application reserved for the OAuth services. If you haven't created it, create it in https://github.com/settings/applications/new. After creating it, make sure to also store the client and the secret values");
@@ -79,16 +82,16 @@ internal sealed class Settings
         {
             settings.GitHubAccessToken = AskOptionalString("Mastodon access token");
         }
-        if ((Mastonet.Visibility)settings.Visibility is < Mastonet.Visibility.Public or > Mastonet.Visibility.Direct)
+        if (settings.Visibility is < Mastonet.Visibility.Public or > Mastonet.Visibility.Direct)
         {
             throw new ArgumentOutOfRangeException($"Visibility value is out of range: {settings.Visibility}. Allowed numeric values are: 0 (Public), 1 (Unlisted), 2 (Private), 3 (Direct).");
         }
         if (settings.SleepSeconds <= 0)
         {
-            throw new ArgumentOutOfRangeException("The SleepSeconds value should be a positive number.");
+            throw new ArgumentOutOfRangeException("SleepSeconds", "The SleepSeconds value should be a positive number.");
         }
 
-        Console.WriteLine(settings.Debug ?
+        log.WriteInfo(settings.Debug ?
             "Debugging mode enabled. Won't publish to Mastodon." :
             "Debugging mode disabled. Will publish to Mastodon.");
 

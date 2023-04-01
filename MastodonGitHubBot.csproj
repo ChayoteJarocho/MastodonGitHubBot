@@ -1,21 +1,32 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>net7.0-windows;net7.0</TargetFrameworks>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Mastonet" Version="2.0.0-preview-2022-11-18" />
-    <PackageReference Include="Octokit" Version="4.0.1" />
-  </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
+        <Compile Remove="*.Unix.cs" />
+        <None Include="*.Unix.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' != 'net7.0-windows'">
+        <Compile Remove="*.Windows.cs" />
+        <None Include="*.Windows.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Mastonet" Version="2.3.0" />
+        <PackageReference Include="Octokit" Version="5.0.2" />
+        <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
 </Project>
