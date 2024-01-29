@@ -8,27 +8,27 @@ namespace MastodonGitHubBot;
 
 internal static class Mastodon
 {
-    public static async Task<MastodonClient> GetClientAsync(Log log, Settings settings, HttpClient sharedHttpClient)
+    public static async Task<MastodonClient> GetClientAsync(Log log, Server server, HttpClient sharedHttpClient)
     {
-        string accessToken = await GetAccessTokenAsync(log, settings, sharedHttpClient);
-        return new MastodonClient(instance: settings.MastodonServer, accessToken, sharedHttpClient);
+        string accessToken = await GetAccessTokenAsync(log, server, sharedHttpClient);
+        return new MastodonClient(instance: server.MastodonServer, accessToken, sharedHttpClient);
     }
 
-    private static async Task<string> GetAccessTokenAsync(Log log, Settings settings, HttpClient sharedHttpClient)
+    private static async Task<string> GetAccessTokenAsync(Log log, Server server, HttpClient sharedHttpClient)
     {
-        if (string.IsNullOrWhiteSpace(settings.MastodonAccessToken))
+        if (string.IsNullOrWhiteSpace(server.MastodonAccessToken))
         {
-            AuthenticationClient authClient = new(instance: settings.MastodonServer, sharedHttpClient);
-            await authClient.CreateApp(appName: settings.AppName, Scope.Write);
+            AuthenticationClient authClient = new(instance: server.MastodonServer, sharedHttpClient);
+            await authClient.CreateApp(appName: server.AppName, Scope.Write);
 
             string authCode = GetMastodonOAuthCode(log, authClient);
 
             Auth auth = await authClient.ConnectWithCode(authCode);
 
-            settings.MastodonAccessToken = auth.AccessToken;
+            server.MastodonAccessToken = auth.AccessToken;
         }
 
-        return settings.MastodonAccessToken;
+        return server.MastodonAccessToken;
     }
 
     private static string GetMastodonOAuthCode(Log log, AuthenticationClient authClient)
