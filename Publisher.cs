@@ -21,7 +21,6 @@ internal class Publisher
     private readonly ApiOptions _firstPageApiOptions;
     private readonly RepositoryIssueRequest _latestIssuesConfiguration;
 
-    private readonly int _sleepSeconds;
     private readonly bool _debug;
 
     public static async Task<Publisher> CreateAsync(Log log, HttpClient sharedHttpClient, Settings settings, Server server)
@@ -41,7 +40,6 @@ internal class Publisher
         _firstPageApiOptions = new() { PageCount = 1, PageSize = 250, StartPage = 1 };
         _latestIssuesConfiguration = new() { SortDirection = SortDirection.Descending, State = ItemStateFilter.Open, SortProperty = IssueSort.Created };
 
-        _sleepSeconds = settings.SleepSeconds;
         _debug = settings.Debug;
     }
 
@@ -76,9 +74,6 @@ internal class Publisher
             _server.GitHubLatestIssueNumber = issue.Number;
         }
         PrintStatus();
-
-        _log.WriteInfo($"Sleeping for {_sleepSeconds} seconds...");
-        Thread.Sleep(TimeSpan.FromSeconds(_sleepSeconds));
     }
 
     // Includes PRs

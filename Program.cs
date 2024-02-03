@@ -48,6 +48,8 @@ public class Program
                 await publisher.PublishAsync();
             }
             Flush(settings);
+            _log.WriteInfo($"Sleeping for {settings.SleepSeconds} seconds...");
+            Thread.Sleep(TimeSpan.FromSeconds(settings.SleepSeconds));
         }
     }
 
