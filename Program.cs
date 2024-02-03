@@ -81,7 +81,7 @@ public class Program
             throw new ArgumentOutOfRangeException("The SleepSeconds value should be a positive number.", innerException: null);
         }
 
-        log.WriteInfo("Debugging mode " + (settings.Debug ? "enabled" : "disabled") + ". Won't publish to Mastodon.");
+        log.WriteInfo("Debugging mode " + (settings.Debug ? "enabled. Won't" : "disabled. Will") + " publish to Mastodon.");
 
         foreach (Server server in settings.Servers)
         {
