@@ -6,35 +6,35 @@ namespace MastodonGitHubBot;
 
 internal static class GitHub
 {
-    public static async Task<GitHubClient> GetClientAsync(Log log, Settings settings)
+    public static async Task<GitHubClient> GetClientAsync(Log log, Server server)
     {
-        ArgumentException.ThrowIfNullOrEmpty(settings.GitHubClientId);
-        ArgumentException.ThrowIfNullOrEmpty(settings.GitHubSecret);
-        ArgumentException.ThrowIfNullOrEmpty(settings.GitHubUserName);
+        ArgumentException.ThrowIfNullOrEmpty(server.GitHubClientId);
+        ArgumentException.ThrowIfNullOrEmpty(server.GitHubSecret);
+        ArgumentException.ThrowIfNullOrEmpty(server.GitHubUserName);
 
-        GitHubClient github = new(new ProductHeaderValue(settings.AppName));
-        string accessToken = await GetAccessTokenAsync(log, settings, github);
+        GitHubClient github = new(new ProductHeaderValue(server.AppName));
+        string accessToken = await GetAccessTokenAsync(log, server, github);
         github.Credentials = new Credentials(accessToken);
         return github;
     }
 
-    private static async Task<string> GetAccessTokenAsync(Log log, Settings settings, GitHubClient github)
+    private static async Task<string> GetAccessTokenAsync(Log log, Server server, GitHubClient github)
     {
-        if (string.IsNullOrWhiteSpace(settings.GitHubAccessToken))
+        if (string.IsNullOrWhiteSpace(server.GitHubAccessToken))
         {
-            OauthLoginRequest oauthLoginRequest = new(settings.GitHubClientId);
-            oauthLoginRequest.Scopes.Add(settings.GitHubUserName);
+            OauthLoginRequest oauthLoginRequest = new(server.GitHubClientId);
+            oauthLoginRequest.Scopes.Add(server.GitHubUserName);
             oauthLoginRequest.Scopes.Add("public_repo");
 
             string authCode = GetGitHubOAuthCode(log, github, oauthLoginRequest);
 
-            OauthTokenRequest oauthTokenRequest = new(settings.GitHubClientId, settings.GitHubSecret, authCode);
+            OauthTokenRequest oauthTokenRequest = new(server.GitHubClientId, server.GitHubSecret, authCode);
             OauthToken accessToken = await github.Oauth.CreateAccessToken(oauthTokenRequest);
 
-            settings.GitHubAccessToken = accessToken.AccessToken;
+            server.GitHubAccessToken = accessToken.AccessToken;
         }
 
-        return settings.GitHubAccessToken;
+        return server.GitHubAccessToken;
     }
 
     private static string GetGitHubOAuthCode(Log log, GitHubClient github, OauthLoginRequest oauthLoginRequest)

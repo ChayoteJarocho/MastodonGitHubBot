@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,47 +14,33 @@ namespace MastodonGitHubBot;
 internal class Publisher
 {
     private readonly Log _log;
-    private readonly Settings _settings;
+    private readonly Server _server;
     private readonly MastodonClient _mastodon;
     private readonly GitHubClient _github;
 
     private readonly ApiOptions _firstPageApiOptions;
     private readonly RepositoryIssueRequest _latestIssuesConfiguration;
 
-    private readonly TimeSpan _sleepSecondsSpan;
+    private readonly bool _debug;
 
-    public Publisher(Log log, Settings settings, MastodonClient mastodon, GitHubClient github)
+    public static async Task<Publisher> CreateAsync(Log log, HttpClient sharedHttpClient, Settings settings, Server server)
+    {
+        var mastodon = await Mastodon.GetClientAsync(log, server, sharedHttpClient);
+        var github = await GitHub.GetClientAsync(log, server);
+        return new Publisher(log, settings, server, mastodon, github);
+    }
+
+    internal Publisher(Log log, Settings settings, Server server, MastodonClient mastodon, GitHubClient github)
     {
         _log = log ?? throw new ArgumentNullException(nameof(log));
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _server = server;
         _mastodon = mastodon ?? throw new ArgumentNullException(nameof(mastodon));
         _github = github ?? throw new ArgumentNullException(nameof(github));
 
         _firstPageApiOptions = new() { PageCount = 1, PageSize = 250, StartPage = 1 };
         _latestIssuesConfiguration = new() { SortDirection = SortDirection.Descending, State = ItemStateFilter.Open, SortProperty = IssueSort.Created };
 
-        _sleepSecondsSpan = TimeSpan.FromSeconds(_settings.SleepSeconds);
-    }
-
-    public async Task StartAsync()
-    {
-        Console.WriteLine($"Starting loop...");
-        while (true)
-        {
-            IOrderedEnumerable<Issue> issues = await GetUnpublishedIssuesAsync();
-            _log.WriteInfo($"Found {issues.Count()} unpublished issues.");
-            foreach (Issue issue in issues)
-            {
-                await PublishAsync(issue);
-                _settings.GitHubLatestIssueNumber = issue.Number;
-                _settings.Flush(); // Save latest issue number in json file
-            }
-
-            PrintStatus();
-
-            _log.WriteInfo($"Sleeping for {_settings.SleepSeconds} seconds...");
-            Thread.Sleep(_sleepSecondsSpan);
-        }
+        _debug = settings.Debug;
     }
 
     private void PrintStatus()
@@ -69,13 +56,33 @@ internal class Publisher
 
     }
 
+    public async Task PublishAsync()
+    {
+        IOrderedEnumerable<Issue> issues = await GetUnpublishedIssuesAsync();
+        _log.WriteInfo($"Found {issues.Count()} unpublished issues.");
+        foreach (Issue issue in issues)
+        {
+            string text = $"{issue.Title} ({issue.Number}) {issue.HtmlUrl}";
+
+            _log.WriteSuccess($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
+            if (!_debug)
+            {
+                Status status = await _mastodon.PublishStatus(text, _server.Visibility);
+                _log.WriteSuccess($"Toot published to Mastodon. ID: {status.Url}");
+                Thread.Sleep(1000);
+            }
+            _server.GitHubLatestIssueNumber = issue.Number;
+        }
+        PrintStatus();
+    }
+
     // Includes PRs
     private Issue GetLastPublishedIssue(IEnumerable<Issue> latestIssues)
     {
         Issue? lastPublishedIssue = null;
-        if (_settings.GitHubLatestIssueNumber != 0)
+        if (_server.GitHubLatestIssueNumber != 0)
         {
-            for (int number = _settings.GitHubLatestIssueNumber; number < (_settings.GitHubLatestIssueNumber + 10); number++)
+            for (int number = _server.GitHubLatestIssueNumber; number < (_server.GitHubLatestIssueNumber + 10); number++)
             {
                 lastPublishedIssue = latestIssues.SingleOrDefault(i => i.Number == number);
                 if (lastPublishedIssue != null)
@@ -91,11 +98,10 @@ internal class Publisher
 
         if (lastPublishedIssue == null)
         {
-            _log.WriteError($"Unable to find the the specified latest issue or the next 10 after that: {_settings.GitHubLatestIssueNumber}");
+            _log.WriteError($"Unable to find the the specified latest issue or the next 10 after that: {_server.GitHubLatestIssueNumber}");
             lastPublishedIssue = latestIssues.Any() ? latestIssues.First() : throw new NullReferenceException("No issues found.");
             _log.WriteWarning($"Assigning the latest found issue as the latest one: {lastPublishedIssue.Number}");
-            _settings.GitHubLatestIssueNumber = lastPublishedIssue.Number;
-            _settings.Flush();
+            _server.GitHubLatestIssueNumber = lastPublishedIssue.Number;
         }
 
         return lastPublishedIssue;
@@ -104,25 +110,12 @@ internal class Publisher
     // Includes PRs
     private async Task<IOrderedEnumerable<Issue>> GetUnpublishedIssuesAsync()
     {
-        IReadOnlyList<Issue> latestIssues = await _github.Issue.GetAllForRepository(_settings.GitHubRepoOrg, _settings.GitHubRepoName, _latestIssuesConfiguration, _firstPageApiOptions);
+        IReadOnlyList<Issue> latestIssues = await _github.Issue.GetAllForRepository(_server.GitHubRepoOrg, _server.GitHubRepoName, _latestIssuesConfiguration, _firstPageApiOptions);
 
         Issue? lastPublishedIssue = GetLastPublishedIssue(latestIssues);
 
         return latestIssues
             .Where(i => i.Number > lastPublishedIssue.Number)
             .OrderBy(i => i.Number); // Re-sorted ascending so they get published in order of creation
-    }
-
-    private async Task PublishAsync(Issue issue)
-    {
-        string text = $"{issue.Title} ({issue.Number}) {issue.HtmlUrl}";
-
-        _log.WriteSuccess($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
-        if (!_settings.Debug)
-        {
-            Status status = await _mastodon.PublishStatus(text, _settings.Visibility);
-            _log.WriteSuccess($"Toot published to Mastodon. ID: {status.Url}");
-            Thread.Sleep(1000);
-        }
     }
 }
