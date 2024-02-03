@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MastodonGitHubBot;
@@ -48,7 +49,7 @@ public class Program
                 await publisher.PublishAsync();
             }
             Flush(settings);
-            _log.WriteInfo($"Sleeping for {settings.SleepSeconds} seconds...");
+            log.WriteInfo($"Sleeping for {settings.SleepSeconds} seconds...");
             Thread.Sleep(TimeSpan.FromSeconds(settings.SleepSeconds));
         }
     }
