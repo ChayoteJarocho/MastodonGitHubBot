@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -18,9 +18,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mastonet" Version="2.3.0" />
-        <PackageReference Include="Octokit" Version="5.0.2" />
-        <PackageReference Include="System.Diagnostics.EventLog" Version="7.0.0" />
+        <PackageReference Include="Mastonet" />
+        <PackageReference Include="Octokit" />
+        <PackageReference Include="System.Diagnostics.EventLog" />
     </ItemGroup>
 
     <ItemGroup>
