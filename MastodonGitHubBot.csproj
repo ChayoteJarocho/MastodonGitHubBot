@@ -1,18 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>net7.0-windows;net7.0</TargetFrameworks>
+        <TargetFrameworks>$(NetCurrent)-windows;$(NetCurrent)</TargetFrameworks>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net7.0-windows'">
+    <ItemGroup Condition="'$(TargetFramework)' == '$(NetCurrent)-windows'">
         <Compile Remove="*.Unix.cs" />
         <None Include="*.Unix.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' != 'net7.0-windows'">
+    <ItemGroup Condition="'$(TargetFramework)' != '$(NetCurrent)-windows'">
         <Compile Remove="*.Windows.cs" />
         <None Include="*.Windows.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
     </ItemGroup>
