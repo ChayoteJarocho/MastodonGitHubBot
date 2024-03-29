@@ -3,3 +3,5 @@ bin/
 .vs/
 .vscode/
 **/*.binlog
+**/*.pp
+.mono/
