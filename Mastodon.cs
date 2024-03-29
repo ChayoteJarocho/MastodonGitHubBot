@@ -19,7 +19,7 @@ internal static class Mastodon
         if (string.IsNullOrWhiteSpace(server.MastodonAccessToken))
         {
             AuthenticationClient authClient = new(instance: server.MastodonServer, sharedHttpClient);
-            await authClient.CreateApp(appName: server.AppName, Scope.Write);
+            await authClient.CreateApp(appName: server.AppName, scope: GranularScope.Write__Statuses);
 
             string authCode = GetMastodonOAuthCode(log, authClient);
 
