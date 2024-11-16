@@ -1,6 +1,4 @@
-﻿using Mastonet;
-using Octokit;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -9,7 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 public class Program
 {
@@ -84,7 +82,7 @@ public class Program
             throw new ArgumentOutOfRangeException("The SleepSeconds value should be a positive number.", innerException: null);
         }
 
-        log.WriteInfo("Debugging mode " + (settings.Debug ? "enabled. Won't" : "disabled. Will") + " publish to Mastodon.");
+        log.WriteInfo("Debugging mode " + (settings.Debug ? "enabled. Won't" : "disabled. Will") + " publish to Bluesky.");
 
         foreach (Server server in settings.Servers)
         {
@@ -116,21 +114,17 @@ public class Program
             {
                 server.GitHubRepoName = AskString(server.ServerName, "value of the target GitHub repo name");
             }
-            if (string.IsNullOrWhiteSpace(server.MastodonServer))
-            {
-                server.MastodonServer = AskString(server.ServerName, "name of the Mastodon server that hosts your automated account");
-            }
             if (string.IsNullOrWhiteSpace(server.GitHubAccessToken))
             {
                 server.GitHubAccessToken = AskOptionalString(server.ServerName, "GitHub access token");
             }
-            if (string.IsNullOrWhiteSpace(server.MastodonAccessToken))
+            if (string.IsNullOrWhiteSpace(server.BlueskyUserName))
             {
-                server.GitHubAccessToken = AskOptionalString(server.ServerName, "Mastodon access token");
+                server.BlueskyUserName = AskString(server.ServerName, "username to skeet to Bluesky");
             }
-            if (server.Visibility is < Mastonet.Visibility.Public or > Mastonet.Visibility.Direct)
+            if (string.IsNullOrWhiteSpace(server.BlueskyPasswordFilePath))
             {
-                throw new ArgumentOutOfRangeException($"{server.ServerName} - Visibility value is out of range: {server.Visibility}. Allowed numeric values are: 0 (Public), 1 (Unlisted), 2 (Private), 3 (Direct).", innerException: null);
+                server.BlueskyPasswordFilePath = AskFilePath(server.ServerName, "path of the file containing the Bluesky account password in plain text");
             }
         }
 
@@ -203,5 +197,20 @@ public class Program
             }
         }
         return value;
+    }
+
+    private static string AskFilePath(string serverName, string description)
+    {
+        string? filePath = null;
+        while(string.IsNullOrWhiteSpace(filePath))
+        {
+            filePath = AskString(serverName, description);
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"{serverName} - File path does not exist. Try again.");
+                filePath = null;
+            }
+        }
+        return filePath;
     }
 }

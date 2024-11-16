@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 internal partial class Log : IDisposable
 {
-    private const string LogName = "MastodonGitHubBot";
+    private const string LogName = "BlueskyGitHubBot";
     private const string LogSource = LogName;
     private const string LogMachineName = ".";
 

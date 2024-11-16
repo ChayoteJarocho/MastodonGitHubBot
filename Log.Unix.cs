@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 internal partial class Log : IDisposable
 {

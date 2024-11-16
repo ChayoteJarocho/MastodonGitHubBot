@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 internal static class GitHub
 {

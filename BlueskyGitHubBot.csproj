@@ -2,25 +2,25 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>$(NetCurrent)-windows;$(NetCurrent)</TargetFrameworks>
+        <TargetFrameworks>net9.0-windows;net9.0</TargetFrameworks>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == '$(NetCurrent)-windows'">
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows'">
         <Compile Remove="*.Unix.cs" />
         <None Include="*.Unix.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' != '$(NetCurrent)-windows'">
+    <ItemGroup Condition="'$(TargetFramework)' != 'net9.0-windows'">
         <Compile Remove="*.Windows.cs" />
         <None Include="*.Windows.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mastonet" />
         <PackageReference Include="Octokit" />
         <PackageReference Include="System.Diagnostics.EventLog" />
+        <PackageReference Include="X.Bluesky" />
     </ItemGroup>
 
     <ItemGroup>

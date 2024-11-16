@@ -2,20 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
-using Mastonet;
-using Mastonet.Entities;
 using Octokit;
+using X.Bluesky;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 internal class Publisher
 {
     private readonly Log _log;
     private readonly Server _server;
-    private readonly MastodonClient _mastodon;
+    private readonly IBlueskyClient _bluesky;
     private readonly GitHubClient _github;
 
     private readonly ApiOptions _firstPageApiOptions;
@@ -25,16 +23,17 @@ internal class Publisher
 
     public static async Task<Publisher> CreateAsync(Log log, HttpClient sharedHttpClient, Settings settings, Server server)
     {
-        var mastodon = await Mastodon.GetClientAsync(log, server, sharedHttpClient);
+        string password = await server.GetBlueskyPasswordAsync();
+        var bluesky = new BlueskyClient(server.BlueskyUserName, password);
         var github = await GitHub.GetClientAsync(log, server);
-        return new Publisher(log, settings, server, mastodon, github);
+        return new Publisher(log, settings, server, bluesky, github);
     }
 
-    internal Publisher(Log log, Settings settings, Server server, MastodonClient mastodon, GitHubClient github)
+    internal Publisher(Log log, Settings settings, Server server, BlueskyClient bluesky, GitHubClient github)
     {
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _server = server;
-        _mastodon = mastodon ?? throw new ArgumentNullException(nameof(mastodon));
+        _bluesky = bluesky ?? throw new ArgumentNullException(nameof(bluesky));
         _github = github ?? throw new ArgumentNullException(nameof(github));
 
         _firstPageApiOptions = new() { PageCount = 1, PageSize = 250, StartPage = 1 };
@@ -67,8 +66,8 @@ internal class Publisher
             _log.WriteSuccess($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
             if (!_debug)
             {
-                Status status = await _mastodon.PublishStatus(text, _server.Visibility);
-                _log.WriteSuccess($"Toot published to Mastodon. ID: {status.Url}");
+                await _bluesky.Post(text);
+                _log.WriteSuccess($"Skeet published to Bluesky.");
                 Thread.Sleep(1000);
             }
             _server.GitHubLatestIssueNumber = issue.Number;

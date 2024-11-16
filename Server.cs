@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
-namespace MastodonGitHubBot;
+namespace BlueskyGitHubBot;
 
 internal sealed class Server
 {
@@ -17,8 +15,19 @@ internal sealed class Server
     public string GitHubRepoOrg { get; set; } = string.Empty;
     public string GitHubRepoName { get; set; } = string.Empty;
     public int GitHubLatestIssueNumber { get; set; } = 0;
-    public string MastodonServer { get; set; } = string.Empty;
-    public string MastodonAccessToken { get; set; } = string.Empty;
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public Mastonet.Visibility Visibility { get; set; } = Mastonet.Visibility.Unlisted;
+    public string BlueskyUserName { get; set; } = string.Empty;
+    public string BlueskyPasswordFilePath { get; set; } = string.Empty;
+    public async Task<string> GetBlueskyPasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(BlueskyPasswordFilePath))
+        {
+            throw new NullReferenceException("No Bluesky password file path has been provided.");
+        }
+        else if (!File.Exists(BlueskyPasswordFilePath))
+        {
+            throw new FileNotFoundException($"The file containing the Bluesky password does not exist: {BlueskyPasswordFilePath}");
+        }
+
+        return await File.ReadAllTextAsync(BlueskyPasswordFilePath);
+    }
 }
