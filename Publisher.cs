@@ -20,6 +20,7 @@ internal class Publisher
     private readonly RepositoryIssueRequest _latestIssuesConfiguration;
 
     private readonly bool _debug;
+    private readonly int _rateLimitingSeconds;
 
     public static async Task<Publisher> CreateAsync(Log log, HttpClient sharedHttpClient, Settings settings, Server server)
     {
@@ -40,6 +41,7 @@ internal class Publisher
         _latestIssuesConfiguration = new() { SortDirection = SortDirection.Descending, State = ItemStateFilter.Open, SortProperty = IssueSort.Created };
 
         _debug = settings.Debug;
+        _rateLimitingSeconds = settings.RateLimitingSeconds;
     }
 
     private void PrintStatus()
@@ -51,25 +53,50 @@ internal class Publisher
         _log.WriteInfo($"How many requests per hour?: {rateLimit?.Limit}{Environment.NewLine}" +
                        $"How many requests left?: {rateLimit?.Remaining}{Environment.NewLine}" +
                        $"When does the limit reset?: {rateLimit?.Reset}{Environment.NewLine}");
-        Console.WriteLine("----------");
+        _log.WriteInfo("----------");
 
     }
 
     public async Task PublishAsync()
     {
-        IOrderedEnumerable<Issue> issues = await GetUnpublishedIssuesAsync();
+        List<Issue> issues = [.. (await GetUnpublishedIssuesAsync())];
         _log.WriteInfo($"Found {issues.Count()} unpublished issues.");
-        foreach (Issue issue in issues)
+        _log.WriteInfo("-----");
+        for (int i = 0; i < issues.Count(); i++)
         {
+            Issue issue = issues[i];
             string text = $"{issue.Title} ({issue.Number}) {issue.HtmlUrl}";
 
-            _log.WriteSuccess($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
+            _log.WriteInfo($"{issue.CreatedAt:yy/MM/dd HH:mm:ss} - {text}");
             if (!_debug)
             {
-                await _bluesky.Post(text);
-                _log.WriteSuccess($"Skeet published to Bluesky.");
-                Thread.Sleep(1000);
+                _log.WriteInfo($"Attempting to publish to Bluesky...");
+                try
+                {
+                    await _bluesky.Post(text);
+                    _log.WriteSuccess($"Skeet published to Bluesky.");
+                }
+                catch (Exception exception)
+                {
+                    _log.WriteError("Bluesky rate limited reached.");
+                    _log.WriteError(exception.Message);
+                    if (exception.StackTrace != null)
+                    {
+                        _log.WriteError(exception.StackTrace);
+                    }
+                    i--;
+                    
+                    _log.WriteInfo($"Waiting {_rateLimitingSeconds} seconds before publishing another skeet...");
+                    Thread.Sleep(TimeSpan.FromSeconds(_rateLimitingSeconds));
+                }
             }
+            else
+            {
+                _log.WriteSuccess("Debug is enabled. Pretend the skeet was published successfully.");
+            }
+            
+            _log.WriteInfo("-----");
+
             _server.GitHubLatestIssueNumber = issue.Number;
         }
         PrintStatus();
